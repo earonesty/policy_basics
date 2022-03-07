@@ -92,5 +92,5 @@ class TimeRangeRule(RulePlugin):
         self.times = TimeArgs.from_dict(args)
 
     def approve_request(self, request: ApprovalRequest) -> Optional[bool]:
-        now = datetime.now()
+        now = datetime.now(tz=LOCAL_TIMEZONE)
         return self.times.in_range(now)

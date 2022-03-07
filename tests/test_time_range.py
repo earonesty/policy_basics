@@ -43,6 +43,15 @@ def test_time_range():
                 auth_meta=[],
             )
         )
+    # check if there are bugs when we're not mocked
+    tr.approve_request(
+        ApprovalRequest(
+            request_type=RequestType.DECRYPT,
+            device_id=b"did",
+            profile=ProfileInfo(b"pi", profile_words=[]),
+            auth_meta=[],
+        )
+    )
 
 
 def test_tz_default():
