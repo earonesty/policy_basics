@@ -22,7 +22,7 @@ publish:
 	twine upload dist/*
 
 readme:
-	PYTHONPATH=../docmd python -mdocmd policy_basics > README.md
+	python -mdocmd policy_basics > README.md
 
 install-hooks:
 	pre-commit install

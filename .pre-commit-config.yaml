@@ -1,0 +1,13 @@
+repos:
+-   repo: local
+    hooks: 
+    - id: docmd
+      name: docmd
+      language: system
+      entry: bash -c "make readme"
+      files: policy_basics 
+-   repo: https://github.com/ambv/black
+    rev: 21.11b1
+    hooks:
+    - id: black
+      language_version: python3.9
