@@ -1,4 +1,5 @@
 atakama>=1.4.0
+dateutil
 docmd
 pytest
 coverage>=5
