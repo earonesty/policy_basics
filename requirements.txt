@@ -1,0 +1,8 @@
+atakama>=1.4.0
+docmd
+pytest
+coverage>=5
+pytest-cov
+pylint
+black
+pre-commit
