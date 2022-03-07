@@ -18,11 +18,11 @@ see https://github.com/AtakamaLLC/atakama_sdk.
 Basic rule for time ranges:
 
 YML Arguments:
-    time_start: time start (hh:mm)
-    time_end: time end (hh:mm)
-    days: list of days of the week, monday=0, default is 0-6
-    include: list of specific dates to include
-    exclude: list of specific dates to exclude
+ - time_start: time start (hh:mm)
+ - time_end: time end (hh:mm)
+ - days: list of days of the week, monday=0, default is 0-6
+ - include: list of specific dates to include
+ - exclude: list of specific dates to exclude
 
 ```
 Example:
