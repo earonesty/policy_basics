@@ -1,6 +1,7 @@
 # pylint: disable=invalid-name
 import unittest.mock
 import dateutil.parser
+import pytest
 
 from atakama import ApprovalRequest, RequestType, ProfileInfo
 
@@ -84,3 +85,52 @@ def test_time_only():
     assert tr.times.in_range(local_parse("2022-03-07 09:00am"))
     assert tr.times.in_range(local_parse("2022-03-07 09:00pm"))
     assert not tr.times.in_range(local_parse("2022-03-07 10:00pm"))
+
+
+def test_assertions():
+    TimeRangeRule(
+        {
+            "days": [1, 2, 3],
+            "include": ["2022-03-07"],
+            "exclude": ["2022-03-08"],
+            "time_start": "09:00+04:00",
+            "time_end": "17:00+04:00",
+        }
+    )
+
+    with pytest.raises(Exception):
+        TimeRangeRule(
+            {
+                "days": [7],
+            }
+        )
+
+    with pytest.raises(Exception):
+        TimeRangeRule(
+            {
+                "include": ["2022-03-07"],
+                "exclude": ["2022-03-07"],
+            }
+        )
+
+    with pytest.raises(Exception):
+        TimeRangeRule(
+            {
+                "time_end": "09:00+04:00",
+                "time_start": "17:00+04:00",
+            }
+        )
+
+    with pytest.raises(Exception):
+        TimeRangeRule(
+            {
+                "time_start": "09:00+04:00",
+            }
+        )
+
+    with pytest.raises(Exception):
+        TimeRangeRule(
+            {
+                "time_end": "17:00+04:00",
+            }
+        )

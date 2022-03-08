@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, Set, Iterable
 from datetime import date, time, datetime
 
 import dateutil.parser
@@ -9,21 +9,30 @@ LOCAL_TIMEZONE = datetime.now().astimezone().tzinfo
 
 class TimeArgs:
     # see https://docs.python.org/3/library/datetime.html#datetime.date.weekday
-    ALL_DAYS: List[int] = [0, 1, 2, 3, 4, 5, 6]
+    ALL_DAYS: Set[int] = [0, 1, 2, 3, 4, 5, 6]
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        days: List[int],
-        include: List[date],
-        exclude: List[date],
+        days: Iterable[int],
+        include: Iterable[date],
+        exclude: Iterable[date],
         time_start: Optional[time] = None,
         time_end: Optional[time] = None,
     ):
-        self.days_of_week = days
-        self.include = include
-        self.exclude = exclude
+        self.days_of_week = set(days)
+        self.include = set(include)
+        self.exclude = set(exclude)
         self.time_of_day_start = time_start
         self.time_of_day_end = time_end
+        assert not self.include.intersection(
+            self.exclude
+        ), "cannot have include and exclude of the same day"
+        assert bool(time_start) == bool(
+            time_end
+        ), "must have both time start and end, or neither"
+        assert not time_start or (
+            time_start < time_end
+        ), "time start must be less than time end"
         assert all(0 <= d <= 6 for d in self.days_of_week), "invalid day of week"
 
     def in_range(self, now: datetime):
@@ -42,19 +51,19 @@ class TimeArgs:
     def from_dict(cls, args):
         return TimeArgs(
             days=args.get("days", cls.ALL_DAYS),
-            include=cls.strs_to_dates(args.get("include", [])),
-            exclude=cls.strs_to_dates(args.get("exclude", [])),
-            time_start=cls.strs_to_time(args.get("time_start", None)),
-            time_end=cls.strs_to_time(args.get("time_end", None)),
+            include=cls.strs_to_dates(args.get("include", set())),
+            exclude=cls.strs_to_dates(args.get("exclude", set())),
+            time_start=cls.str_to_time(args.get("time_start", None)),
+            time_end=cls.str_to_time(args.get("time_end", None)),
         )
 
     @staticmethod
-    def strs_to_dates(strs: List[str]):
-        assert isinstance(strs, list), "input must be a list"
+    def strs_to_dates(strs: Iterable[str]):
+        assert not isinstance(strs, str), "input must be iterable of str"
         return [dateutil.parser.parse(s).date() for s in strs]
 
     @staticmethod
-    def strs_to_time(tim: Optional[str]):
+    def str_to_time(tim: Optional[str]):
         if not tim:
             return None
         timetz = dateutil.parser.parse(tim).timetz()
