@@ -7,5 +7,4 @@ disable=missing-docstring,
         consider-using-f-string
 
 
-good-names=db, i, ex, pc
-        
+good-names=db,i,ex,pc

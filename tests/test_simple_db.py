@@ -1,4 +1,5 @@
 import functools
+from multiprocessing.pool import ThreadPool
 
 import pytest
 
@@ -14,19 +15,18 @@ def test_simple_db(tmp_path, persistent):
 
     db.set("key", 32)
     assert db.get("key") == 32
-    from multiprocessing.pool import ThreadPool
 
-    p = ThreadPool(10)
+    tpool = ThreadPool(10)
 
     def sets(i):
         db.set(i, i)
         return db.get(i)
 
-    def sum(a, b):
+    def _sum(a, b):
         return a + b
 
-    res = functools.reduce(sum, p.map(sets, range(100)))
-    reg = functools.reduce(sum, range(100))
+    res = functools.reduce(_sum, tpool.map(sets, range(100)))
+    reg = functools.reduce(_sum, range(100))
 
     assert res == reg
 

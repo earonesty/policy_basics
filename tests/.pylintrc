@@ -3,9 +3,12 @@
 init-hook='import sys; sys.path.append(".")'
 
 
+# tests folder needs things like protected-access
+
 disable=missing-docstring,
-        consider-using-f-string
+        consider-using-f-string,
+        protected-access,
+        redefined-outer-name
 
-
-good-names=db, i
-        
+[BASIC]
+good-names=db,i,j,k,a,b,pr

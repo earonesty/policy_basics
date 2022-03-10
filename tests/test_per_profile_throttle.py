@@ -1,5 +1,6 @@
-# pylint: disable=invalid-name
 import unittest.mock
+from multiprocessing.pool import ThreadPool
+
 
 import notanorm
 import pytest
@@ -74,16 +75,14 @@ def test_throttle_db_atomic(tmp_path, persistent):
     else:
         db = ProfileThrottleDb({"persistent": False})
 
-    from multiprocessing.pool import ThreadPool
-
-    p = ThreadPool(10)
+    thread_pool = ThreadPool(10)
 
     cnt = 100
 
     def sets(_):
         return db.increment(b"pid").day_cnt
 
-    assert all(ok for ok in p.map(sets, range(cnt)))
+    assert all(ok for ok in thread_pool.map(sets, range(cnt)))
 
     assert db.get(b"pid").day_cnt == cnt
 
@@ -91,8 +90,8 @@ def test_throttle_db_atomic(tmp_path, persistent):
 def test_throttle_db_corruption(tmp_path):
     # resilient to file corruption, just resets counts
     path = tmp_path / "quote.db"
-    with path.open("w") as fh:
-        fh.write("junk")
+    with path.open("w") as db_fh:
+        db_fh.write("junk")
     db = ProfileThrottleDb({"persistent": True, "db-file": path})
     assert db.increment(b"pid").day_cnt == 1
 
