@@ -18,8 +18,8 @@ see https://github.com/AtakamaLLC/atakama_sdk.
 Basic rule for per-profile limits:
 
 YML Arguments:
- - per_hour: reqyests per hour
- - per_day: reqyests per day
+ - per_hour: requests per hour
+ - per_day: requests per day
  - persistent: restarting the server not clear current quotas
 
 ```
