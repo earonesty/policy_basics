@@ -73,14 +73,13 @@ class ProfileThrottleDb:
         self.__lock = Lock()
         if not args.get("persistent", False):
             self.db = MemoryDb()
-            return
         else:
             path = str(args.get("db-file", os.path.expanduser("~/profile-throttle.db")))
             try:
                 self.db = FileDb(path)
-            except Exception as ex:
+            except Exception as ex:  # pylint: disable=broad-except
                 # deal with corruption by recovering
-                log.error("unable to open %s: %s" % (path, repr(ex)))
+                log.error("unable to open %s: %s", path, repr(ex))
                 # save the old one, maybe for debugging or something
                 os.replace(path, path + ".old")
                 self.db = FileDb(path)

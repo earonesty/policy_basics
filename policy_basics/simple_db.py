@@ -46,7 +46,8 @@ class FileDb(AbstractDb):
             self.__check_ok()
         except Exception:
             # close db if we fail to verify that it works
-            self.db and self.db.close()
+            if self.db:
+                self.db.close()
             raise
 
     def __check_ok(self):
@@ -54,8 +55,8 @@ class FileDb(AbstractDb):
         assert self.db.select_one(FileDb.TABLE_NAME, key=FileDb.TEST_KEY).val == 44
         self.db.delete(FileDb.TABLE_NAME, key=FileDb.TEST_KEY)
 
-    def set(self, key, val):
-        self.db.upsert(FileDb.TABLE_NAME, key=key, val=val)
+    def set(self, key, value):
+        self.db.upsert(FileDb.TABLE_NAME, key=key, val=value)
 
     def get(self, key):
         ret = self.db.select_one(FileDb.TABLE_NAME, key=key)
@@ -76,8 +77,8 @@ class MemoryDb(AbstractDb):
     def __init__(self):
         self.db = {}
 
-    def set(self, key, val):
-        self.db[key] = val
+    def set(self, key, value):
+        self.db[key] = value
 
     def get(self, key):
         return self.db.get(key, None)
