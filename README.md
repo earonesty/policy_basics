@@ -33,6 +33,29 @@ Example:
 
 
 
+# [policy_basics](#policy_basics).profile_id
+
+
+## ProfileIdRule(RulePlugin)
+
+Basic rule for exact match of profile ids:
+
+YML Arguments:
+ - profile_ids:
+    - profile_id_in_hex
+    - profile words space delimited
+
+```
+Example:
+    - rule: profile-id-rule
+      profile_ids:
+        - d56e89af673fe1897fdcc8
+        - correct horse battery staple diamond hands
+```
+
+
+
+
 # [policy_basics](#policy_basics).time_range
 
 
