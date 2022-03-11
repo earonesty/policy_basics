@@ -19,6 +19,11 @@ setup(
     long_description=long_description(),
     long_description_content_type="text/markdown",
     setup_requires=["wheel"],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
+        "Operating System :: OS Independent",
+    ],
     entry_points={
         "console_scripts": ["policy_basics=policy_basics.__main__:main"],
     },
