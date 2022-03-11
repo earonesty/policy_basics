@@ -85,7 +85,7 @@ class TimeRangeRule(RulePlugin):
 
     ```
     Example:
-        - rule: time-range-policy
+        - rule: time-range-rule
           time_start: 9:00am
           time_end: 5:00pm
           exclude: 2022-06-01
@@ -94,7 +94,7 @@ class TimeRangeRule(RulePlugin):
 
     @staticmethod
     def name() -> str:
-        return "time-range-policy"
+        return "time-range-rule"
 
     def __init__(self, args):
         super().__init__(args)

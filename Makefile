@@ -7,7 +7,7 @@ requirements:
 	pip install -r requirements.txt
 
 lint:
-	python -m pylint policy_basics tests
+	python -m pylint policy_basics& python -m pylint --rcfile=tests/.pylintrc tests; wait
 	black policy_basics tests
 
 black:
@@ -26,3 +26,6 @@ readme:
 
 install-hooks:
 	pre-commit install
+
+
+PHONY: env requirements lint black test publish readme install-hooks

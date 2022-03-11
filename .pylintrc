@@ -6,3 +6,5 @@ init-hook='import sys; sys.path.append(".")'
 disable=missing-docstring,
         consider-using-f-string
 
+
+good-names=db,i,ex,pc

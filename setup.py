@@ -12,13 +12,18 @@ def long_description():
 
 setup(
     name="atakama_policy_basics",
-    version="1.0.4",
+    version="1.1.0",
     description="Convert python docstring documentation to github markdown files",
     packages=["policy_basics"],
     url="https://github.com/AtakamaLLC/policy_basics",
     long_description=long_description(),
     long_description_content_type="text/markdown",
     setup_requires=["wheel"],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
+        "Operating System :: OS Independent",
+    ],
     entry_points={
         "console_scripts": ["policy_basics=policy_basics.__main__:main"],
     },

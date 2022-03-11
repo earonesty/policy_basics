@@ -10,6 +10,29 @@ see https://github.com/AtakamaLLC/atakama_sdk.
 
 
 
+# [policy_basics](#policy_basics).per_profile_throttle
+
+
+## ProfileThrottleRule(RulePlugin)
+
+Basic rule for per-profile limits:
+
+YML Arguments:
+ - per_hour: requests per hour
+ - per_day: requests per day
+ - persistent: restarting the server not clear current quotas
+
+```
+Example:
+    - rule: per-profile-throttle-rule
+      per_hour: 10
+      per_day: 100
+      persistent: False
+```
+
+
+
+
 # [policy_basics](#policy_basics).time_range
 
 
@@ -26,7 +49,7 @@ YML Arguments:
 
 ```
 Example:
-    - rule: time-range-policy
+    - rule: time-range-rule
       time_start: 9:00am
       time_end: 5:00pm
       exclude: 2022-06-01

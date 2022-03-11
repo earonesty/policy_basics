@@ -8,3 +8,4 @@ For more complex policies, a custom plugin can be built and loaded into the keys
 see https://github.com/AtakamaLLC/atakama_sdk.
 """
 from .time_range import TimeRangeRule
+from .per_profile_throttle import ProfileThrottleRule
