@@ -85,11 +85,11 @@ class ProfileThrottleDb:
                 self.db = FileDb(path)
 
     @staticmethod
-    def _bytes_to_str(byt):
-        return byt.hex()
+    def _get_db_key(rule_id: str, profile_id: bytes):
+        return profile_id.hex() + ":" + rule_id
 
-    def get(self, profile_id: bytes) -> ProfileCount:
-        data = self.db.get(self._bytes_to_str(profile_id))
+    def get(self, rule_id: str, profile_id: bytes) -> ProfileCount:
+        data = self.db.get(self._get_db_key(rule_id, profile_id))
         if not data:
             return ProfileCount()
         try:
@@ -98,16 +98,16 @@ class ProfileThrottleDb:
             log.warning("invalid value in db, resetting: (%s)", data)
             return ProfileCount()
 
-    def increment(self, profile_id: bytes):
+    def increment(self, rule_id: str, profile_id: bytes):
         with self.__lock:
-            pc = self.get(profile_id)
+            pc = self.get(rule_id, profile_id)
             pc.hour_cnt += 1
             pc.day_cnt += 1
-            self.db.set(self._bytes_to_str(profile_id), pc.to_str())
+            self.db.set(self._get_db_key(rule_id, profile_id), pc.to_str())
         return pc
 
-    def clear(self, profile_id: bytes):
-        self.db.remove(self._bytes_to_str(profile_id))
+    def clear(self, rule_id: str, profile_id: bytes):
+        self.db.remove(self._get_db_key(rule_id, profile_id))
 
 
 class ProfileThrottleRule(RulePlugin):
@@ -134,6 +134,7 @@ class ProfileThrottleRule(RulePlugin):
 
     def __init__(self, args):
         super().__init__(args)
+        self.rule_id = args["rule_id"]
         self.per_hour = args.get("per_hour", INFINITE)
         self.per_day = args.get("per_day", INFINITE)
         self.db = ProfileThrottleDb(args)
@@ -142,10 +143,10 @@ class ProfileThrottleRule(RulePlugin):
         return self._approve_profile_request(request.profile.profile_id)
 
     def _approve_profile_request(self, profile_id):
-        pc = self.db.increment(profile_id)
+        pc = self.db.increment(self.rule_id, profile_id)
         return (self.per_day == INFINITE or pc.day_cnt <= self.per_day) and (
             self.per_hour == INFINITE or pc.hour_cnt <= self.per_hour
         )
 
     def clear_quota(self, profile: ProfileInfo) -> None:
-        self.db.clear(profile.profile_id)
+        self.db.clear(self.rule_id, profile.profile_id)
