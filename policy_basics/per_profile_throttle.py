@@ -2,7 +2,7 @@ import os
 import json
 import time
 from datetime import datetime
-from threading import Lock
+from threading import RLock
 
 import logging as log
 from atakama import RulePlugin, ApprovalRequest, ProfileInfo
@@ -70,7 +70,7 @@ class ProfileThrottleDb:
     db: AbstractDb
 
     def __init__(self, args):
-        self.__lock = Lock()
+        self.__lock = RLock()
         if not args.get("persistent", False):
             self.db = MemoryDb()
         else:

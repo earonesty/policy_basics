@@ -62,6 +62,10 @@ def test_profile_throttle(persistent):
 def test_persistent():
     pr = ProfileThrottleRule({"per_day": 3, "persistent": True, "rule_id": "rid"})
     pr.clear_quota(ProfileInfo(profile_id=b"pid", profile_words=[]))
+    pr2 = ProfileThrottleRule(
+        {"per_day": 3, "persistent": True, "rule_id": "different_rule"}
+    )
+    pr2.clear_quota(ProfileInfo(profile_id=b"pid", profile_words=[]))
 
     assert pr._approve_profile_request(b"pid")
     assert pr._approve_profile_request(b"pid")
@@ -69,10 +73,8 @@ def test_persistent():
     pr = ProfileThrottleRule({"per_day": 3, "persistent": True, "rule_id": "rid"})
     assert not pr._approve_profile_request(b"pid")
 
-    pr = ProfileThrottleRule(
-        {"per_day": 3, "persistent": True, "rule_id": "different_rule"}
-    )
-    assert pr._approve_profile_request(b"pid")
+    # different rule is unaffected
+    assert pr2._approve_profile_request(b"pid")
 
 
 @pytest.mark.parametrize("persistent", [0, 1])
