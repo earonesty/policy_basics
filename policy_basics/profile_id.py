@@ -34,7 +34,9 @@ class ProfileIdRule(RulePlugin):
         for pid in args["profile_ids"]:
             if " " in pid:
                 words = tuple(w.strip() for w in pid.split(" "))
-                assert len(words) >= MINIMUM_WORD_COUNT
+                assert (
+                    len(words) >= MINIMUM_WORD_COUNT
+                ), "profile id word match must use at least 4 words"
                 self.__wkey[len(words)].add(words)
             else:
                 pid = bytes.fromhex(pid)

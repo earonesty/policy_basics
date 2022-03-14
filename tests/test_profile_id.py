@@ -1,8 +1,6 @@
 import os
-import unittest.mock
 
 import atakama
-import pytest
 from atakama import ProfileInfo, ApprovalRequest, RequestType
 
 from policy_basics.profile_id import (
@@ -60,11 +58,11 @@ def test_end_to_end():
     pid = os.urandom(16)
     hexpid = pid.hex()
     cfg = {"decrypt": [[{"rule": "profile-id-rule", "profile_ids": [hexpid]}]]}
-    re = atakama.RuleEngine.from_dict(cfg)
-    assert re.approve_request(
+    rule_engine = atakama.RuleEngine.from_dict(cfg)
+    assert rule_engine.approve_request(
         ApprovalRequest(
             request_type=RequestType.DECRYPT,
-            device_id=b"pid",
+            device_id=b"profid",
             profile=ProfileInfo(profile_id=pid, profile_words=[]),
             auth_meta=None,
         )
