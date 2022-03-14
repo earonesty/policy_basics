@@ -143,8 +143,8 @@ def test_throttle_db_schema_change(throt_db):
 
 def test_end_to_end():
     cfg = {"decrypt": [[{"rule": "per-profile-throttle-rule", "per_day": 2}]]}
-    re = atakama.RuleEngine.from_dict(cfg)
-    assert re.approve_request(
+    rule_engine = atakama.RuleEngine.from_dict(cfg)
+    assert rule_engine.approve_request(
         ApprovalRequest(
             request_type=RequestType.DECRYPT,
             device_id=b"pid",

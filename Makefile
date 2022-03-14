@@ -1,3 +1,4 @@
+SHELL=bash
 DELETE_ON_ERROR:
 
 env:
@@ -7,7 +8,8 @@ requirements:
 	pip install -r requirements.txt
 
 lint:
-	python -m pylint policy_basics& python -m pylint --rcfile=tests/.pylintrc tests; wait
+	python -m pylint policy_basics
+	python -m pylint --rcfile=tests/.pylintrc tests
 	black policy_basics tests
 
 black:
