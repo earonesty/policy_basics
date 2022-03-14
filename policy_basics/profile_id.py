@@ -30,7 +30,7 @@ class ProfileIdRule(RulePlugin):
 
     def __init__(self, args):
         self.__pids: Set[bytes] = set()
-        self.__wkey: Dict[int, Set[Tuple]] = defaultdict(lambda: set())
+        self.__wkey: Dict[int, Set[Tuple]] = defaultdict(set)
         for pid in args["profile_ids"]:
             if " " in pid:
                 words = tuple(w.strip() for w in pid.split(" "))
