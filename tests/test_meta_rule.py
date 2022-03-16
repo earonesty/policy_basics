@@ -3,12 +3,12 @@ from atakama import ApprovalRequest, MetaInfo
 from policy_basics.meta_str import MetaRule
 
 
-def meta(*paths):
+def meta(*paths, complete=True):
     return ApprovalRequest(
         request_type=None,
         device_id=b"whatever",
         profile=None,
-        auth_meta=[MetaInfo(p, True) for p in paths],
+        auth_meta=[MetaInfo(p, complete) for p in paths],
     )
 
 
@@ -78,3 +78,14 @@ def test_meta_invert():
     assert not pr.approve_request(meta("root/sub/path"))
     assert pr.approve_request(meta("/sub/path.txt"))
     assert not pr.approve_request(meta("/sub/path"))
+
+
+def test_require_complete():
+    pr = MetaRule(
+        {
+            "paths": ["sub/path", "/root/sub", "*.ext", "basename.*"],
+            "require_complete": True,
+        }
+    )
+    assert not pr.approve_request(meta("/root/sub/path/basename.ext", complete=False))
+    assert pr.approve_request(meta("/root/sub/path/basename.ext", complete=True))

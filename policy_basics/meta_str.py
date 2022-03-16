@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Dict, List, Tuple, Set, Pattern
+from typing import Optional, List, Tuple, Pattern
 
 from atakama import RulePlugin, ApprovalRequest
 
@@ -101,7 +101,9 @@ class MetaRule(RulePlugin):
     def approve_request(self, request: ApprovalRequest) -> Optional[bool]:
         has_meta = False
         for meta in request.auth_meta:
-            ok = False
+            if self.__require_complete and not meta.complete:
+                return False
+            should_approve = False
             has_meta = True
 
             norm = meta.meta.replace("\\", "/")
@@ -113,10 +115,10 @@ class MetaRule(RulePlugin):
                 if invert:
                     res = not res
                 if res:
-                    ok = True
+                    should_approve = True
                     break
 
-            if not ok:
+            if not should_approve:
                 return False
 
         return has_meta
