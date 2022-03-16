@@ -16,6 +16,7 @@ class MetaRule(RulePlugin):
      - regexes:
         - list of regexes
      - case_sensitive: true or false
+     - require_complete: require paths to have complete, validated metadata
     ```
     Example:
         - rule: meta-rule
