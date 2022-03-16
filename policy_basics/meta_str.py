@@ -27,6 +27,8 @@ class MetaRule(RulePlugin):
             - basename.with_ext
     ```
 
+    All paths and regex's that start with an '!' are inverted (not-match).
+
     Regex matches are python (PCRE) standard regular expressions.
 
     Path matches use the following rules:
