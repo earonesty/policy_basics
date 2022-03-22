@@ -42,6 +42,7 @@ def test_time_range():
                 device_id=b"did",
                 profile=ProfileInfo(b"pi", profile_words=[]),
                 auth_meta=[],
+                cryptographic_id=None,
             )
         )
     # check if there are bugs when we're not mocked
@@ -51,6 +52,7 @@ def test_time_range():
             device_id=b"did",
             profile=ProfileInfo(b"pi", profile_words=[]),
             auth_meta=[],
+            cryptographic_id=None,
         )
     )
 

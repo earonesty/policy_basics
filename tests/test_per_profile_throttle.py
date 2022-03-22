@@ -31,8 +31,11 @@ def test_profile_throttle(persistent):
         # fixed time
         set_time(timer, "2022-03-09 17:00Z")
 
+        pi = ProfileInfo(profile_id=b"pid", profile_words=[])
+        assert not pr.at_quota(pi)
         # same hour
         assert pr._approve_profile_request(b"pid")
+        assert pr.at_quota(pi)
         assert not pr._approve_profile_request(b"pid")
 
         # new hour
@@ -55,6 +58,7 @@ def test_profile_throttle(persistent):
                 device_id=b"pid",
                 profile=ProfileInfo(profile_id=b"pid", profile_words=[]),
                 auth_meta=None,
+                cryptographic_id=None,
             )
         )
 
@@ -150,5 +154,6 @@ def test_end_to_end():
             device_id=b"pid",
             profile=ProfileInfo(profile_id=b"pid", profile_words=[]),
             auth_meta=None,
+            cryptographic_id=None,
         )
     )
