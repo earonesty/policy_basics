@@ -18,6 +18,7 @@ def test_profile_id_match():
             device_id=b"whatever",
             profile=ProfileInfo(profile_id=pid, profile_words=["random", "words"]),
             auth_meta=None,
+            cryptographic_id=None,
         )
     )
 
@@ -39,6 +40,7 @@ def test_profile_id_match():
                 ],
             ),
             auth_meta=None,
+            cryptographic_id=None,
         )
     )
 
@@ -50,6 +52,7 @@ def test_profile_id_match():
                 profile_id=b"notpid", profile_words=["word", "list", "here", "is"]
             ),
             auth_meta=None,
+            cryptographic_id=None,
         )
     )
 
@@ -65,5 +68,6 @@ def test_end_to_end():
             device_id=b"profid",
             profile=ProfileInfo(profile_id=pid, profile_words=[]),
             auth_meta=None,
+            cryptographic_id=None,
         )
     )

@@ -65,6 +65,10 @@ class ProfileCount:
     def _dict_to_str(dct) -> str:
         return json.dumps(dct)
 
+    def increment(self):
+        self.hour_cnt += 1
+        self.day_cnt += 1
+
 
 class ProfileThrottleDb:
     db: AbstractDb
@@ -101,8 +105,7 @@ class ProfileThrottleDb:
     def increment(self, rule_id: str, profile_id: bytes):
         with self.__lock:
             pc = self.get(rule_id, profile_id)
-            pc.hour_cnt += 1
-            pc.day_cnt += 1
+            pc.increment()
             self.db.set(self._get_db_key(rule_id, profile_id), pc.to_str())
         return pc
 
@@ -144,9 +147,17 @@ class ProfileThrottleRule(RulePlugin):
 
     def _approve_profile_request(self, profile_id):
         pc = self.db.increment(self.rule_id, profile_id)
+        return self._within_quota(pc)
+
+    def _within_quota(self, pc):
         return (self.per_day == INFINITE or pc.day_cnt <= self.per_day) and (
             self.per_hour == INFINITE or pc.hour_cnt <= self.per_hour
         )
 
     def clear_quota(self, profile: ProfileInfo) -> None:
         self.db.clear(self.rule_id, profile.profile_id)
+
+    def at_quota(self, profile: ProfileInfo) -> bool:
+        pc = self.db.get(self.rule_id, profile.profile_id)
+        pc.increment()
+        return not self._within_quota(pc)

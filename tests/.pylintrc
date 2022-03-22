@@ -11,4 +11,4 @@ disable=missing-docstring,
         redefined-outer-name
 
 [BASIC]
-good-names=db,i,j,k,a,b,pr,re
+good-names=db,i,j,k,a,b,pr,re,pi
