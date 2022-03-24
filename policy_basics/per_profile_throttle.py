@@ -4,10 +4,13 @@ import time
 from datetime import datetime
 from threading import RLock
 
-import logging as log
+import logging
 from atakama import RulePlugin, ApprovalRequest, ProfileInfo
 
 from policy_basics.simple_db import AbstractDb, FileDb, MemoryDb
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 
 LOCAL_TIMEZONE = datetime.now().astimezone().tzinfo
 
@@ -43,7 +46,7 @@ class ProfileCount:
             if reqhour != curhour:
                 hour_cnt = 0
 
-        self._ts = int(timestamp or Timer.time())
+        self._ts = Timer.time()
         self.hour_cnt = int(hour_cnt)
         self.day_cnt = int(day_cnt)
 
@@ -74,7 +77,6 @@ class ProfileThrottleDb:
     db: AbstractDb
 
     def __init__(self, args):
-        self.__lock = RLock()
         if not args.get("persistent", False):
             self.db = MemoryDb()
         else:
@@ -102,11 +104,9 @@ class ProfileThrottleDb:
             log.warning("invalid value in db, resetting: (%s)", data)
             return ProfileCount()
 
-    def increment(self, rule_id: str, profile_id: bytes):
-        with self.__lock:
-            pc = self.get(rule_id, profile_id)
-            pc.increment()
-            self.db.set(self._get_db_key(rule_id, profile_id), pc.to_str())
+    def increment(self, rule_id: str, profile_id: bytes, pc: ProfileCount):
+        pc.increment()
+        self.db.set(self._get_db_key(rule_id, profile_id), pc.to_str())
         return pc
 
     def clear(self, rule_id: str, profile_id: bytes):
@@ -137,7 +137,7 @@ class ProfileThrottleRule(RulePlugin):
 
     def __init__(self, args):
         super().__init__(args)
-        self.rule_id = args["rule_id"]
+        self.__lock = RLock()
         self.per_hour = args.get("per_hour", INFINITE)
         self.per_day = args.get("per_day", INFINITE)
         self.db = ProfileThrottleDb(args)
@@ -146,12 +146,24 @@ class ProfileThrottleRule(RulePlugin):
         return self._approve_profile_request(request.profile.profile_id)
 
     def _approve_profile_request(self, profile_id):
-        pc = self.db.increment(self.rule_id, profile_id)
-        return self._within_quota(pc)
+        with self.__lock:
+            pc = self.db.get(self.rule_id, profile_id)
+            within = self._within_quota(pc)
+            if within:
+                pc = self.db.increment(self.rule_id, profile_id, pc)
+        log.debug(
+            "ProfileThrottleRule._approve_profile_request rule_id=%s within=%s "
+            "day_cnt=%i hour_cnt=%i",
+            self.rule_id,
+            within,
+            pc.day_cnt,
+            pc.hour_cnt,
+        )
+        return within
 
     def _within_quota(self, pc):
-        return (self.per_day == INFINITE or pc.day_cnt <= self.per_day) and (
-            self.per_hour == INFINITE or pc.hour_cnt <= self.per_hour
+        return (self.per_day == INFINITE or pc.day_cnt < self.per_day) and (
+            self.per_hour == INFINITE or pc.hour_cnt < self.per_hour
         )
 
     def clear_quota(self, profile: ProfileInfo) -> None:
@@ -159,5 +171,4 @@ class ProfileThrottleRule(RulePlugin):
 
     def at_quota(self, profile: ProfileInfo) -> bool:
         pc = self.db.get(self.rule_id, profile.profile_id)
-        pc.increment()
         return not self._within_quota(pc)
