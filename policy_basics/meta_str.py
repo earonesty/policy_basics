@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: © Atakama, Inc <support@atakama.com>
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 import re
 from typing import Optional, List, Tuple, Pattern
 
@@ -28,7 +31,8 @@ class MetaRule(RulePlugin):
             - basename.with_ext
     ```
 
-    All paths and regex's that start with an '!' are inverted (not-match).
+    All paths and regex's that start with an '!' are inverted (not-match)
+        - paths cannot match any 'inverted'
 
     Regex matches are python (PCRE) standard regular expressions.
 
@@ -107,17 +111,21 @@ class MetaRule(RulePlugin):
             should_approve = False
             has_meta = True
 
-            norm = meta.meta.replace("\\", "/")
+            norm = meta.meta
             if not self.__sensitive:
                 norm = norm.lower()
 
             for regex, invert in self.__regexes:
                 res = regex.search(norm)
                 if invert:
-                    res = not res
-                if res:
-                    should_approve = True
-                    break
+                    if res:
+                        break
+                    else:
+                        should_approve = True
+                else:
+                    if res:
+                        should_approve = True
+                        break
 
             if not should_approve:
                 return False

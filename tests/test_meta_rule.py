@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: © Atakama, Inc <support@atakama.com>
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 from atakama import ApprovalRequest, MetaInfo
 
 from policy_basics.meta_str import MetaRule
@@ -82,6 +85,9 @@ def test_meta_invert():
     assert not pr.approve_request(meta("root/sub/path"))
     assert pr.approve_request(meta("/sub/path.txt"))
     assert not pr.approve_request(meta("/sub/path"))
+    pr = MetaRule({"paths": ["!/taxi", "/tax*"], "rule_id": "rid"})
+    assert pr.approve_request(meta("/taxes"))
+    assert not pr.approve_request(meta("/taxi"))
 
 
 def test_require_complete():
