@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: © Atakama, Inc <support@atakama.com>
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 """
 A collection of rule plugins that allow basic policies to be implemented when using
 the Atakama Rule Engine.
