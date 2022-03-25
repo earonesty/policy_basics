@@ -11,13 +11,16 @@ from policy_basics.profile_id import (
 def test_profile_id_match():
     pid = os.urandom(16)
     hexpid = pid.hex()
-    pr = ProfileIdRule({"profile_ids": ["word list here is ok", hexpid]})
+    pr = ProfileIdRule(
+        {"profile_ids": ["word list here is ok", hexpid], "rule_id": "rid"}
+    )
     assert pr.approve_request(
         ApprovalRequest(
             request_type=None,
             device_id=b"whatever",
             profile=ProfileInfo(profile_id=pid, profile_words=["random", "words"]),
             auth_meta=None,
+            cryptographic_id=None,
         )
     )
 
@@ -39,6 +42,7 @@ def test_profile_id_match():
                 ],
             ),
             auth_meta=None,
+            cryptographic_id=None,
         )
     )
 
@@ -50,6 +54,7 @@ def test_profile_id_match():
                 profile_id=b"notpid", profile_words=["word", "list", "here", "is"]
             ),
             auth_meta=None,
+            cryptographic_id=None,
         )
     )
 
@@ -65,5 +70,6 @@ def test_end_to_end():
             device_id=b"profid",
             profile=ProfileInfo(profile_id=pid, profile_words=[]),
             auth_meta=None,
+            cryptographic_id=None,
         )
     )

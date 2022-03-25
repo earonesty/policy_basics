@@ -17,6 +17,7 @@ def test_time_range():
             "exclude": ["2022-03-08"],
             "time_start": "09:00+04:00",
             "time_end": "17:00+04:00",
+            "rule_id": "rid",
         }
     )
 
@@ -42,6 +43,7 @@ def test_time_range():
                 device_id=b"did",
                 profile=ProfileInfo(b"pi", profile_words=[]),
                 auth_meta=[],
+                cryptographic_id=None,
             )
         )
     # check if there are bugs when we're not mocked
@@ -51,12 +53,13 @@ def test_time_range():
             device_id=b"did",
             profile=ProfileInfo(b"pi", profile_words=[]),
             auth_meta=[],
+            cryptographic_id=None,
         )
     )
 
 
 def test_tz_default():
-    tr = TimeRangeRule({"time_start": "09:00", "time_end": "17:00"})
+    tr = TimeRangeRule({"time_start": "09:00", "time_end": "17:00", "rule_id": "rid"})
     assert tr.times.time_of_day_start.tzinfo
     assert tr.times.time_of_day_end.tzinfo
 
@@ -65,6 +68,7 @@ def test_day_only():
     tr = TimeRangeRule(
         {
             "days": [1, 2, 3],
+            "rule_id": "rid",
         }
     )
     assert not tr.times.in_range(dateutil.parser.parse("2022-03-07 19:00+04:00"))
@@ -80,6 +84,7 @@ def test_time_only():
         {
             "time_start": "09:00am",
             "time_end": "09:00pm",
+            "rule_id": "rid",
         }
     )
     assert tr.times.in_range(local_parse("2022-03-07 09:00am"))
@@ -95,6 +100,7 @@ def test_assertions():
             "exclude": ["2022-03-08"],
             "time_start": "09:00+04:00",
             "time_end": "17:00+04:00",
+            "rule_id": "rid",
         }
     )
 
@@ -102,6 +108,7 @@ def test_assertions():
         TimeRangeRule(
             {
                 "days": [7],
+                "rule_id": "rid",
             }
         )
 
@@ -110,6 +117,7 @@ def test_assertions():
             {
                 "include": ["2022-03-07"],
                 "exclude": ["2022-03-07"],
+                "rule_id": "rid",
             }
         )
 
@@ -118,6 +126,7 @@ def test_assertions():
             {
                 "time_end": "09:00+04:00",
                 "time_start": "17:00+04:00",
+                "rule_id": "rid",
             }
         )
 
@@ -125,6 +134,7 @@ def test_assertions():
         TimeRangeRule(
             {
                 "time_start": "09:00+04:00",
+                "rule_id": "rid",
             }
         )
 
@@ -132,5 +142,6 @@ def test_assertions():
         TimeRangeRule(
             {
                 "time_end": "17:00+04:00",
+                "rule_id": "rid",
             }
         )
