@@ -120,8 +120,7 @@ class MetaRule(RulePlugin):
                 if invert:
                     if res:
                         break
-                    else:
-                        should_approve = True
+                    should_approve = True
                 else:
                     if res:
                         should_approve = True
