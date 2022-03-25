@@ -10,7 +10,8 @@ requirements:
 lint:
 	python -m pylint policy_basics
 	python -m pylint --rcfile=tests/.pylintrc tests
-	black policy_basics tests
+	python -m pre_commit run insert-license --all-files
+	python -m pre_commit run black --all-files
 
 black:
 	black policy_basics tests
