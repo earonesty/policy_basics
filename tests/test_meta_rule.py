@@ -52,11 +52,18 @@ def test_glob_subcomponent():
     assert not pr.approve_request(meta("root/sub/co/mp/basename"))
 
     pr = MetaRule({"paths": ["little*sub/"], "rule_id": "rid"})
-    assert pr.approve_request(meta("root/little sub"))
+    assert not pr.approve_request(meta("root/little sub"))
+    assert pr.approve_request(meta("root/little sub/"))
     assert pr.approve_request(meta("root/little sub/comp/basename"))
     assert pr.approve_request(meta("root/littlesub/comp/basename"))
     assert pr.approve_request(meta("root/littlesub/comp/basename"))
     assert not pr.approve_request(meta("root/little/sub"))
+
+    pr = MetaRule({"paths": ["little*sub/x"], "rule_id": "rid"})
+    assert pr.approve_request(meta("root/little sub/x"))
+    assert pr.approve_request(meta("root/little sub/x/y"))
+    assert not pr.approve_request(meta("root/little sub/xzz"))
+    assert not pr.approve_request(meta("root/little sub/xzz/y"))
 
 
 def test_sensitive_paths():

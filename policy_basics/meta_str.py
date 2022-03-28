@@ -69,10 +69,15 @@ class MetaRule(RulePlugin):
             path = path.replace("\\*", "[^/]*")
             regex = f"^{path}"
         elif "/" in path:
-            path = path.rstrip("/")
             path = re.escape(path)
             path = path.replace("\\*", "[^/]*")
-            regex = f"\\/{path}/|/{path}$"
+            if not path.endswith("/"):
+                # match full component or ends-with
+                regex = f"\\/{path}/|\\/{path}$"
+            else:
+                # match full component only
+                path = path.rstrip("/")
+                regex = f"\\/{path}/"
         else:
             path = re.escape(path)
             path = path.replace("\\*", "[^/]*")
