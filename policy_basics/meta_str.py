@@ -31,7 +31,8 @@ class MetaRule(RulePlugin):
             - basename.with_ext
     ```
 
-    All paths and regex's that start with an '!' are inverted (not-match).
+    All paths and regex's that start with an '!' are inverted (not-match)
+        - paths cannot match any 'inverted'
 
     Regex matches are python (PCRE) standard regular expressions.
 
@@ -68,10 +69,15 @@ class MetaRule(RulePlugin):
             path = path.replace("\\*", "[^/]*")
             regex = f"^{path}"
         elif "/" in path:
-            path = path.rstrip("/")
             path = re.escape(path)
             path = path.replace("\\*", "[^/]*")
-            regex = f"\\/{path}/|/{path}$"
+            if not path.endswith("/"):
+                # match full component or ends-with
+                regex = f"\\/{path}/|\\/{path}$"
+            else:
+                # match full component only
+                path = path.rstrip("/")
+                regex = f"\\/{path}/"
         else:
             path = re.escape(path)
             path = path.replace("\\*", "[^/]*")
@@ -110,17 +116,20 @@ class MetaRule(RulePlugin):
             should_approve = False
             has_meta = True
 
-            norm = meta.meta.replace("\\", "/")
+            norm = meta.meta
             if not self.__sensitive:
                 norm = norm.lower()
 
             for regex, invert in self.__regexes:
                 res = regex.search(norm)
                 if invert:
-                    res = not res
-                if res:
+                    if res:
+                        break
                     should_approve = True
-                    break
+                else:
+                    if res:
+                        should_approve = True
+                        break
 
             if not should_approve:
                 return False
