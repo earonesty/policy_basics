@@ -10,6 +10,45 @@ see https://github.com/AtakamaLLC/atakama_sdk.
 
 
 
+# [policy\_basics](#policy_basics).meta_str
+
+
+## MetaRule(RulePlugin)
+
+Basic rule for exact match of profile ids:
+
+YML Arguments:
+ - paths:
+    - list of paths
+ - regexes:
+    - list of regexes
+ - case_sensitive: true or false
+ - require_complete: require paths to have complete, validated metadata
+```
+Example:
+    - rule: meta-rule
+      paths:
+        - /startswith/hr
+        - contains/subpath
+        - anysubpath/
+        - basename
+        - basename.with_ext
+```
+
+All paths and regex's that start with an '!' are inverted (not-match)
+    - paths cannot match any 'inverted'
+
+Regex matches are python (PCRE) standard regular expressions.
+
+Path matches use the following rules:
+ - paths can contain wildcards "*", that won't pass path-component boundaries
+ - paths that don't contain a "/" are assumed to be file-basename matches
+ - paths that contain a "/" are assumed to be path-component matches
+ - paths that don't start with "/" are assumed to be subpath matches (match anywhere)
+
+
+
+
 # [policy\_basics](#policy_basics).per_profile_throttle
 
 
