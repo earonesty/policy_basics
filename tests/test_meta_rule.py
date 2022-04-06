@@ -20,29 +20,29 @@ def test_paths():
     pr = MetaRule(
         {"paths": ["sub/path", "/root/sub", "*.ext", "basename.*"], "rule_id": "rid"}
     )
-    assert pr.approve_request(meta("/root/sub/path/basename.ext"))
+    assert pr.approve_request(meta("root/sub/path/basename.ext"))
     assert pr.approve_request(meta("whatever.ext"))
-    assert pr.approve_request(meta("/root/sub/xxx"))
+    assert pr.approve_request(meta("root/sub/xxx"))
     assert pr.approve_request(meta("sdfjksdfjk/sub/path/sdfsdfj"))
-    assert pr.approve_request(meta("/basename.xxx"))
+    assert pr.approve_request(meta("basename.xxx"))
     # insensitive
-    assert pr.approve_request(meta("/Root/Sub/Path/Basename.ext"))
-    assert not pr.approve_request(meta("/root/sub/path/basename.ext", "/some/other"))
+    assert pr.approve_request(meta("Root/Sub/Path/Basename.ext"))
+    assert not pr.approve_request(meta("root/sub/path/basename.ext", "some/other"))
     # sub paths must be sub paths
-    assert not pr.approve_request(meta("sub/path"))
-    assert not pr.approve_request(meta("/sub/path.txt"))
-    assert pr.approve_request(meta("/sub/path"))
+    assert not pr.approve_request(meta("sub/path", complete=False))
+    assert not pr.approve_request(meta("sub/path.txt"))
+    assert pr.approve_request(meta("sub/path"))
     # sub is ok
-    assert pr.approve_request(meta("<incomplete>some/sub/path"))
+    assert pr.approve_request(meta("some/sub/path", complete=False))
 
 
 def test_glob_basename():
     pr = MetaRule({"paths": ["basename.*"], "rule_id": "rid"})
-    assert pr.approve_request(meta("/basename.xxx"))
     assert pr.approve_request(meta("basename.xxx"))
-    assert not pr.approve_request(meta("/basename/xxx"))
-    assert not pr.approve_request(meta("/basename.xxx/yyy"))
-    assert not pr.approve_request(meta("/basename.xxx/"))
+    assert pr.approve_request(meta("basename.xxx"))
+    assert not pr.approve_request(meta("basename/xxx"))
+    assert not pr.approve_request(meta("basename.xxx/yyy"))
+    assert not pr.approve_request(meta("basename.xxx/"))
 
 
 def test_glob_subcomponent():
@@ -74,8 +74,8 @@ def test_sensitive_paths():
             "rule_id": "rid",
         }
     )
-    assert pr.approve_request(meta("/root/sub/path/basename.ext"))
-    assert not pr.approve_request(meta("/Root/Sub/Path/Basename.Ext"))
+    assert pr.approve_request(meta("root/sub/path/basename.ext"))
+    assert not pr.approve_request(meta("Root/Sub/Path/Basename.Ext"))
 
 
 def test_meta_regex():
@@ -88,13 +88,13 @@ def test_meta_invert():
     assert pr.approve_request(meta("nomatch"))
     assert not pr.approve_request(meta("regex"))
     pr = MetaRule({"paths": ["!sub/path"], "rule_id": "rid"})
-    assert pr.approve_request(meta("/anywhere/else"))
+    assert pr.approve_request(meta("anywhere/else"))
     assert not pr.approve_request(meta("root/sub/path"))
-    assert pr.approve_request(meta("/sub/path.txt"))
-    assert not pr.approve_request(meta("/sub/path"))
+    assert pr.approve_request(meta("sub/path.txt"))
+    assert not pr.approve_request(meta("sub/path"))
     pr = MetaRule({"paths": ["!/taxi", "/tax*"], "rule_id": "rid"})
-    assert pr.approve_request(meta("/taxes"))
-    assert not pr.approve_request(meta("/taxi"))
+    assert pr.approve_request(meta("taxes"))
+    assert not pr.approve_request(meta("taxi"))
 
 
 def test_require_complete():
@@ -105,5 +105,5 @@ def test_require_complete():
             "rule_id": "rid",
         }
     )
-    assert not pr.approve_request(meta("/root/sub/path/basename.ext", complete=False))
-    assert pr.approve_request(meta("/root/sub/path/basename.ext", complete=True))
+    assert not pr.approve_request(meta("root/sub/path/basename.ext", complete=False))
+    assert pr.approve_request(meta("root/sub/path/basename.ext", complete=True))
