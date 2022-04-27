@@ -43,11 +43,12 @@ class ProfileCount:
             today = now.date()
             if today != reqdate:
                 day_cnt = 0
-
-            reqhour = reqtime.hour
-            curhour = now.hour
-            if reqhour != curhour:
                 hour_cnt = 0
+            else:
+                reqhour = reqtime.hour
+                curhour = now.hour
+                if reqhour != curhour:
+                    hour_cnt = 0
 
         self._ts = Timer.time()
         self.hour_cnt = int(hour_cnt)
@@ -132,6 +133,9 @@ class ProfileThrottleRule(RulePlugin):
           per_day: 100
           persistent: False
     ```
+
+    Request data are stored per-rule. If there are 2 throttle rules which may match a profile,
+    each will record its own request counts for that profile, i.e. the limits are additive.
     """
 
     @staticmethod
