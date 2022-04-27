@@ -38,7 +38,8 @@ def test_paths():
         }
     )
     assert pr.approve_request(meta("/root/sub/path/basename.ext"))
-    assert not pr.approve_request(meta("/root/subxx/path/basename.ext"))
+    assert pr.approve_request(meta("/root/sub/path/otherfile.whatever"))
+    assert not pr.approve_request(meta("/root/subxx/path/otherfile.whatever"))
     assert pr.approve_request(meta("whatever.ext"))
     assert pr.approve_request(meta("/root/sub/xxx"))
     assert pr.approve_request(meta("sdfjksdfjk/sub/path/sdfsdfj"))

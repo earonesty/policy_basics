@@ -67,7 +67,7 @@ class MetaRule(RulePlugin):
         elif path[0] == "/":
             path = re.escape(path)
             path = path.replace("\\*", "[^/]*")
-            regex = f"^{path}/"
+            regex = f"^{path}/|^{path}$"
         elif "/" in path:
             path = re.escape(path)
             path = path.replace("\\*", "[^/]*")
