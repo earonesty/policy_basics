@@ -120,6 +120,10 @@ class MetaRule(RulePlugin):
             if not self.__sensitive:
                 norm = norm.lower()
 
+            assert norm[0] != "/"
+            if meta.complete:
+                norm = "/" + norm
+
             for regex, invert in self.__regexes:
                 res = regex.search(norm)
                 if invert:
