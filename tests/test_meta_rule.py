@@ -16,17 +16,38 @@ def meta(*paths, complete=True):
     )
 
 
-def test_paths():
+def test_subdir():
     pr = MetaRule(
-        {"paths": ["sub/path", "/root/sub", "*.ext", "basename.*"], "rule_id": "rid"}
+        {
+            "paths": ["/root/sub"],
+            "rule_id": "rid",
+        }
     )
     assert pr.approve_request(meta("/root/sub/path/basename.ext"))
+    assert not pr.approve_request(meta("/root/other/sub/basename.ext"))
+    assert not pr.approve_request(meta("/root/subxx/path/basename.ext"))
+    assert not pr.approve_request(meta("/root/xxsub/path/basename.ext"))
+    assert not pr.approve_request(meta("/rooty/sub/path/basename.ext"))
+
+
+def test_paths():
+    pr = MetaRule(
+        {
+            "paths": ["sub/path", "/root/sub", "*.ext", "basename.*", "baseonly"],
+            "rule_id": "rid",
+        }
+    )
+    assert pr.approve_request(meta("/root/sub/path/basename.ext"))
+    assert not pr.approve_request(meta("/root/subxx/path/basename.ext"))
     assert pr.approve_request(meta("whatever.ext"))
     assert pr.approve_request(meta("/root/sub/xxx"))
     assert pr.approve_request(meta("sdfjksdfjk/sub/path/sdfsdfj"))
     assert pr.approve_request(meta("/basename.xxx"))
     # insensitive
     assert pr.approve_request(meta("/Root/Sub/Path/Basename.ext"))
+    assert pr.approve_request(meta("/wherever/Basename.anyext"))
+    assert pr.approve_request(meta("/wherever/anyfile.ext"))
+    assert pr.approve_request(meta("/wherever/baseonly"))
     assert not pr.approve_request(meta("/root/sub/path/basename.ext", "/some/other"))
     # sub paths must be sub paths
     assert not pr.approve_request(meta("sub/path"))
