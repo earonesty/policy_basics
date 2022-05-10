@@ -42,7 +42,9 @@ class FileDb(AbstractDb):
         try:
             self.db = None
             self.db = notanorm.SqliteDb(self.path)
-            self.db.query(
+            self.db.execute("PRAGMA journal_mode=WAL;")
+            self.db.execute("PRAGMA synchronous=NORMAL;")
+            self.db.execute(
                 "create table if not exists %s (key primary key, val)"
                 % FileDb.TABLE_NAME,
             )
