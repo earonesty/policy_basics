@@ -33,13 +33,20 @@ def test_subdir():
 def test_paths():
     pr = MetaRule(
         {
-            "paths": ["sub/path", "/root/sub", "*.ext", "basename.*", "baseonly"],
+            "paths": ["sub/path", "/root/sub", "Sub_2/", "*.ext", "basename.*", "baseonly"],
             "rule_id": "rid",
         }
     )
     assert pr.approve_request(meta("root/sub/path/basename.ext"))
     assert pr.approve_request(meta("root/sub/path/otherfile.whatever"))
+    assert pr.approve_request(meta("root/sub/sub_sub1/otherfile.whatever"))
     assert not pr.approve_request(meta("root/subxx/path/otherfile.whatever"))
+    assert pr.approve_request(meta("root/sub_xx/filename.ext"))
+    assert pr.approve_request(meta("root/sub_xx/baseonly"))
+    assert pr.approve_request(meta("root/sub_xx/basename.txe"))
+    assert pr.approve_request(meta("Sub_2/basename.ext"))
+    assert pr.approve_request(meta("Sub_2/filename2.random_ext"))
+    assert pr.approve_request(meta("Sub_2/Sub_3/filename3.random_ext"))
     assert pr.approve_request(meta("whatever.ext"))
     assert pr.approve_request(meta("root/sub/xxx"))
     assert pr.approve_request(meta("sdfjksdfjk/sub/path/sdfsdfj"))
@@ -103,13 +110,17 @@ def test_glob_subcomponent():
 def test_sensitive_paths():
     pr = MetaRule(
         {
-            "paths": ["sub/path", "/root/sub", "*.ext", "basename.*"],
+            "paths": ["sub/path", "/root/sub", "Sub2/", "*.ext", "basename.*", "BASEONLY"],
             "case_sensitive": True,
             "rule_id": "rid",
         }
     )
     assert pr.approve_request(meta("root/sub/path/basename.ext"))
     assert not pr.approve_request(meta("Root/Sub/Path/Basename.Ext"))
+    assert pr.approve_request(meta("Sub2/filename.txt"))
+    assert pr.approve_request(meta("SUB2/BASEONLY"))
+    assert not pr.approve_request(meta("sub2/filename.txt"))
+    assert not pr.approve_request(meta("sub2/baseonlY"))
 
 
 def test_meta_regex():
