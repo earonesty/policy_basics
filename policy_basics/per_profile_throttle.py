@@ -170,7 +170,7 @@ class ProfileThrottleRule(RulePlugin):
         pc = self.db.get(self.rule_id, profile_id)
         pc = self.db.increment(self.rule_id, profile_id, pc)
         log.debug(
-            "ProfileThrottleRule._use_quota rule_id=%s now " "day_cnt=%i hour_cnt=%i",
+            "ProfileThrottleRule._use_quota rule_id=%s now day_cnt=%i hour_cnt=%i",
             self.rule_id,
             pc.day_cnt,
             pc.hour_cnt,
