@@ -33,7 +33,14 @@ def test_subdir():
 def test_paths():
     pr = MetaRule(
         {
-            "paths": ["sub/path", "/root/sub", "Sub_2/", "*.ext", "basename.*", "baseonly"],
+            "paths": [
+                "sub/path",
+                "/root/sub",
+                "Sub_2/",
+                "*.ext",
+                "basename.*",
+                "baseonly",
+            ],
             "rule_id": "rid",
         }
     )
@@ -110,7 +117,14 @@ def test_glob_subcomponent():
 def test_sensitive_paths():
     pr = MetaRule(
         {
-            "paths": ["sub/path", "/root/sub", "Sub2/", "*.ext", "basename.*", "BASEONLY"],
+            "paths": [
+                "sub/path",
+                "/root/sub",
+                "Sub2/",
+                "*.ext",
+                "basename.*",
+                "BASEONLY",
+            ],
             "case_sensitive": True,
             "rule_id": "rid",
         }
