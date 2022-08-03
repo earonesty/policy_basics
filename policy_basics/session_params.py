@@ -1,8 +1,7 @@
 # SPDX-FileCopyrightText: © Atakama, Inc <support@atakama.com>
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-from collections import defaultdict
-from typing import Optional, Dict, List, Tuple, Set
+from typing import Optional
 
 from atakama import RulePlugin, ApprovalRequest
 
@@ -40,13 +39,18 @@ class SessionParamsRule(RulePlugin):
 
     def __init__(self, args):
         self.max_request_count = args.get("max_request_count", self.NO_MAXIMUM)
-        assert self.max_request_count > 0 or self.max_request_count == self.NO_MAXIMUM, "invalid request count"
+        assert (
+            self.max_request_count > 0 or self.max_request_count == self.NO_MAXIMUM
+        ), "invalid request count"
         self.max_time_seconds = args.get("max_time_seconds", self.DEFAULT_MAX_TIME)
-        assert self.max_time_seconds < self.MAX_VALID_TIME, "invalid maximum session time"
-        assert self.max_time_seconds > self.MIN_VALID_TIME, "invalid minimum session time"
+        assert (
+            self.max_time_seconds < self.MAX_VALID_TIME
+        ), "invalid maximum session time"
+        assert (
+            self.max_time_seconds > self.MIN_VALID_TIME
+        ), "invalid minimum session time"
         end_by_time = args.get("end_by_time", None)
-        if end_by_time:
-            self.end_by_time = TimeArgs.str_to_time(end_by_time)
+        self.end_by_time = end_by_time and TimeArgs.str_to_time(end_by_time)
         super().__init__(args)
 
     def approve_request(self, request: ApprovalRequest) -> Optional[bool]:

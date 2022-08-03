@@ -14,14 +14,17 @@ def test_session_params():
             "max_request_count": 100,
             "max_time_seconds": 100,
             "end_by_time": "5:00pm+04:00",
+            "rule_id": 55,
         }
     )
     assert tr.end_by_time
     assert tr.max_request_count == 100
     assert tr.max_time_seconds == 100
+    assert tr.approve_request(object())
 
     tr = SessionParamsRule(
         {
+            "rule_id": 55,
         }
     )
     assert tr.max_request_count == tr.NO_MAXIMUM
