@@ -5,7 +5,7 @@ env:
 	python -mvirtualenv env
 
 requirements:
-	pip install -r requirements.txt
+	pip install --isolated -r requirements.txt
 
 lint:
 	python -m pylint policy_basics
