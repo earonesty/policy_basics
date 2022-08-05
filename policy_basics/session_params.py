@@ -7,8 +7,6 @@ from atakama import RulePlugin, ApprovalRequest
 
 from policy_basics.time_range import TimeArgs
 
-MINIMUM_WORD_COUNT = 4
-
 
 class SessionParamsRule(RulePlugin):
     """
@@ -18,6 +16,9 @@ class SessionParamsRule(RulePlugin):
      - max_request_count: int
      - max_time_seconds: int
      - end_by_time: HH:MM[am|pm] [TZ]
+
+    Default is no maximum requests, 5 minute session.
+
     ```
     Example:
         - rule: session-params-rule
@@ -29,7 +30,7 @@ class SessionParamsRule(RulePlugin):
     """
 
     NO_MAXIMUM = 0
-    DEFAULT_MAX_TIME = 300  # 5 minute session default
+    DEFAULT_MAX_TIME = 300
     MAX_VALID_TIME = 86400 * 7  # one-week session is too long
     MIN_VALID_TIME = 1  # 1-second session is too short
 
