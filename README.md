@@ -131,6 +131,32 @@ Example:
 
 
 
+# [policy\_basics](#policy_basics).session_params
+
+
+## SessionParamsRule(RulePlugin)
+
+Container rule for session parameters.
+
+YML Arguments:
+ - max_request_count: int
+ - max_time_seconds: int
+ - end_by_time: HH:MM[am|pm] [TZ]
+
+Default is no maximum requests, 5 minute session.
+
+```
+Example:
+    - rule: session-params-rule
+    - max_request_count: 100
+    - max_time_seconds: 28800
+    - end_by_time: 5:00pm EST
+```
+```
+
+
+
+
 # [policy\_basics](#policy_basics).time_range
 
 
