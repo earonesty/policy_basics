@@ -182,3 +182,24 @@ Example:
 
 
 
+# [policy\_basics](#policy_basics).true_false
+
+
+## ApproveRule(RulePlugin)
+
+Rule to accept all requests.
+
+Accepts no YML Arguments.
+
+
+
+
+## RejectRule(RulePlugin)
+
+Rule to reject all requests
+
+Accept no YML Arguments.
+
+
+
+

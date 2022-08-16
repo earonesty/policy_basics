@@ -48,3 +48,4 @@ from .per_profile_throttle import ProfileThrottleRule
 from .profile_id import ProfileIdRule
 from .meta_str import MetaRule
 from .session_params import SessionParamsRule
+from .true_false import ApproveRule, RejectRule
