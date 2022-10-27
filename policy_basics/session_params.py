@@ -26,7 +26,6 @@ class SessionParamsRule(RulePlugin):
         - max_time_seconds: 28800
         - end_by_time: 5:00pm EST
     ```
-    ```
     """
 
     NO_MAXIMUM = 0
