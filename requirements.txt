@@ -9,4 +9,6 @@ black
 pre-commit
 
 setuptools~=59.6.0
-notanorm~=2.0.2
+notanorm~=3.1
+sqlglot~=10.0
+pymysql

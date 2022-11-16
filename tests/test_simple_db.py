@@ -6,18 +6,21 @@ from multiprocessing.pool import ThreadPool
 
 import pytest
 
-from policy_basics.simple_db import FileDb, MemoryDb
+from policy_basics.simple_db import UriDb, MemoryDb
 
 
 @pytest.mark.parametrize("persistent", [0, 1])
 def test_simple_db(tmp_path, persistent):
     if persistent:
-        db = FileDb(tmp_path / "quote.db")
+        db = UriDb(tmp_path / "quote.db")
     else:
         db = MemoryDb()
 
     db.set("key", 32)
     assert db.get("key") == 32
+
+    db.set("key", "val")
+    assert db.get("key") == "val"
 
     tpool = ThreadPool(10)
 

@@ -9,7 +9,7 @@ from datetime import datetime
 import logging
 from atakama import RulePlugin, ApprovalRequest, ProfileInfo
 
-from policy_basics.simple_db import AbstractDb, FileDb, MemoryDb
+from policy_basics.simple_db import AbstractDb, UriDb, MemoryDb
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
@@ -83,15 +83,23 @@ class ProfileThrottleDb:
         if not args.get("persistent", False):
             self.db = MemoryDb()
         else:
-            path = str(args.get("db-file", os.path.expanduser("~/profile-throttle.db")))
+            uri = args.get("db-uri")
+            path = (
+                str(args.get("db-file", os.path.expanduser("~/profile-throttle.db")))
+                if not uri
+                else None
+            )
             try:
-                self.db = FileDb(path)
+                self.db = UriDb(path=path, uri=uri)
             except Exception as ex:  # pylint: disable=broad-except
-                # deal with corruption by recovering
-                log.error("unable to open %s: %s", path, repr(ex))
-                # save the old one, maybe for debugging or something
-                os.replace(path, path + ".old")
-                self.db = FileDb(path)
+                if path:
+                    # deal with corruption by recovering
+                    log.error("unable to open %s: %s", path, repr(ex))
+                    # save the old one, maybe for debugging or something
+                    os.replace(path, path + ".old")
+                    self.db = UriDb(path)
+                else:
+                    raise
 
     @staticmethod
     def _get_db_key(rule_id: str, profile_id: bytes):
