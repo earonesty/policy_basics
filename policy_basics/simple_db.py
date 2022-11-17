@@ -21,7 +21,6 @@ class AbstractDb(abc.ABC):
             self._connect()
         self._connected = True
 
-    @abc.abstractmethod
     def _connect(self):
         ...
 
@@ -88,7 +87,6 @@ class UriDb(AbstractDb):
         self.db.delete(self.table, key=UriDb.TEST_KEY)
 
     def set(self, key, value: DbVal):
-        self.connect()
         # for speed, we do an unidiomatic type check
         if type(value) is str:  # pylint: disable=unidiomatic-typecheck
             self.db.upsert(self.table, key=key, val=value, ival=None)
@@ -96,18 +94,15 @@ class UriDb(AbstractDb):
             self.db.upsert(self.table, key=key, ival=value, val=None)
 
     def get(self, key) -> DbVal:
-        self.connect()
         ret = self.db.select_one(self.table, key=key)
         if ret is None:
             return None
         return ret.ival if ret.val is None else ret.val
 
     def clear(self):
-        self.connect()
         self.db.delete_all(self.table)
 
     def remove(self, key):
-        self.connect()
         self.db.delete(self.table, key=key)
 
 
@@ -116,9 +111,6 @@ class MemoryDb(AbstractDb):
 
     def __init__(self):
         self.db = {}
-
-    def _connect(self):
-        pass
 
     def set(self, key, value):
         self.db[key] = value

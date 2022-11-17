@@ -7,6 +7,8 @@ import time
 from datetime import datetime
 
 import logging
+from typing import Union
+
 from atakama import RulePlugin, ApprovalRequest, ProfileInfo
 
 from policy_basics.simple_db import AbstractDb, UriDb, MemoryDb
@@ -77,7 +79,7 @@ class ProfileCount:
 
 
 class ProfileThrottleDb:
-    db: AbstractDb
+    db: Union[MemoryDb, UriDb]
 
     def __init__(self, args):
         if not args.get("persistent", False):

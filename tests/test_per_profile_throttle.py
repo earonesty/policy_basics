@@ -188,6 +188,25 @@ def test_throttle_db_schema_bad(tmp_path):
     assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
 
 
+def test_throttle_db_uri_broken(db_uri):
+    # sqlite is resilient to file corruption, just resets counts
+    db = ProfileThrottleDb({"persistent": True, "db-uri": db_uri})
+    db.db.db.execute("drop table %s" % db.db.table)
+    db.db.db.query(
+        "create table %s (`key` integer primary key, bjunk integer)" % UriDb.TABLE_NAME
+    )
+    with pytest.raises(notanorm.errors.DbError):
+        ProfileThrottleDb({"persistent": True, "db-uri": db_uri})
+
+
+def test_throttle_db_mem_not_persist(db_uri):
+    # if persistence is off, it's not persistent
+    db = ProfileThrottleDb({"persistent": False, "db-uri": db_uri})
+    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+    db = ProfileThrottleDb({"persistent": False, "db-uri": db_uri})
+    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+
+
 @pytest.fixture()
 def throt_db(db_uri):
     db = ProfileThrottleDb({"persistent": True, "db-uri": db_uri, "rule_id": "rid"})
