@@ -86,13 +86,16 @@ class ProfileThrottleDb:
             self.db = MemoryDb()
         else:
             uri = args.get("db-uri")
+            kws = {}
+            if args.get("db-table"):
+                kws["table"] = args.get("db-table")
             path = (
                 str(args.get("db-file", os.path.expanduser("~/profile-throttle.db")))
                 if not uri
                 else None
             )
             try:
-                self.db = UriDb(path=path, uri=uri)
+                self.db = UriDb(path=path, uri=uri, **kws)
             except Exception as ex:  # pylint: disable=broad-except
                 if path:
                     # deal with corruption by recovering

@@ -207,6 +207,13 @@ def test_throttle_db_mem_not_persist(db_uri):
     assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
 
 
+def test_throttle_custom_table(db_uri):
+    # if persistence is off, it's not persistent
+    db = ProfileThrottleDb({"persistent": True, "db-uri": db_uri, "db-table": "custom"})
+    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+    assert db.db.table == "custom"
+
+
 @pytest.fixture()
 def throt_db(db_uri):
     db = ProfileThrottleDb({"persistent": True, "db-uri": db_uri, "rule_id": "rid"})
