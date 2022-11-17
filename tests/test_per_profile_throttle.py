@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: © Atakama, Inc <support@atakama.com>
 # SPDX-License-Identifier: LGPL-3.0-or-later
-
+import os
 import unittest.mock
+from contextlib import contextmanager
+from typing import Iterator
 
 import atakama
 import notanorm
@@ -15,7 +17,7 @@ from policy_basics.per_profile_throttle import (
     ProfileThrottleDb,
     ProfileCount,
 )
-from policy_basics.simple_db import FileDb
+from policy_basics.simple_db import UriDb
 
 
 def set_time(timer, iso):
@@ -23,16 +25,43 @@ def set_time(timer, iso):
     timer.time.return_value = local_parse(iso).timestamp()
 
 
+@contextmanager
+def mysql_tmp_db_ctx() -> Iterator[str]:
+    from notanorm.mysql import MySqlDb  # pylint: disable=import-outside-toplevel
+
+    db_name = "txx_" + os.urandom(16).hex()
+
+    mysql_cnf = os.path.expanduser("~/.my.cnf")
+    try:
+        with MySqlDb(read_default_file=mysql_cnf) as conn:
+            conn.execute(f"create database {db_name}")
+            conn.execute(f"use {db_name}")
+        with MySqlDb(read_default_file=mysql_cnf, database=db_name) as conn:
+            yield conn.uri
+    finally:
+        with MySqlDb(read_default_file=mysql_cnf) as conn:
+            conn.execute(f"drop database {db_name}")
+
+
+@pytest.fixture(params=["sqlite", "mysql"], name="db_uri")
+def _db_uri(request, tmp_path):
+    if request.param == "sqlite":
+        path = tmp_path / "quote.db"
+        yield "sqlite:" + str(path)
+    else:
+        with mysql_tmp_db_ctx() as db_uri:
+            yield db_uri
+
+
 @pytest.mark.parametrize("persistent", [True, False])
-def test_profile_throttle(tmp_path, persistent):
-    path = tmp_path / "quote.db"
+def test_throttle_basic(persistent, db_uri):
     pr = ProfileThrottleRule(
         {
             "per_day": 3,
             "per_hour": 1,
             "persistent": persistent,
             "rule_id": "rid",
-            "db-file": path,
+            "db-uri": db_uri,
         }
     )
     pr.clear_quota(ProfileInfo(profile_id=b"pid", profile_words=[]))
@@ -142,7 +171,7 @@ def test_persistent():
 
 
 def test_throttle_db_corruption(tmp_path):
-    # resilient to file corruption, just resets counts
+    # sqlite is resilient to file corruption, just resets counts
     path = tmp_path / "quote.db"
     with path.open("w") as db_fh:
         db_fh.write("junk")
@@ -151,18 +180,43 @@ def test_throttle_db_corruption(tmp_path):
 
 
 def test_throttle_db_schema_bad(tmp_path):
-    # resilient to schema changes, just resets counts
+    # sqlite is resilient to schema changes, just resets counts
     path = tmp_path / "quote.db"
     with notanorm.SqliteDb(str(path)) as db:
-        db.query("create table %s (ajunk, bjunk)" % FileDb.TABLE_NAME)
+        db.query("create table %s (ajunk, bjunk)" % UriDb.TABLE_NAME)
     db = ProfileThrottleDb({"persistent": True, "db-file": path, "rule_id": "rid"})
     assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
 
 
+def test_throttle_db_uri_broken(db_uri):
+    # sqlite is resilient to file corruption, just resets counts
+    db = ProfileThrottleDb({"persistent": True, "db-uri": db_uri})
+    db.db.db.execute("drop table %s" % db.db.table)
+    db.db.db.query(
+        "create table %s (`key` integer primary key, bjunk integer)" % UriDb.TABLE_NAME
+    )
+    with pytest.raises(notanorm.errors.DbError):
+        ProfileThrottleDb({"persistent": True, "db-uri": db_uri})
+
+
+def test_throttle_db_mem_not_persist(db_uri):
+    # if persistence is off, it's not persistent
+    db = ProfileThrottleDb({"persistent": False, "db-uri": db_uri})
+    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+    db = ProfileThrottleDb({"persistent": False, "db-uri": db_uri})
+    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+
+
+def test_throttle_custom_table(db_uri):
+    # if persistence is off, it's not persistent
+    db = ProfileThrottleDb({"persistent": True, "db-uri": db_uri, "db-table": "custom"})
+    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+    assert db.db.table == "custom"
+
+
 @pytest.fixture()
-def throt_db(tmp_path):
-    path = tmp_path / "quote.db"
-    db = ProfileThrottleDb({"persistent": True, "db-file": path, "rule_id": "rid"})
+def throt_db(db_uri):
+    db = ProfileThrottleDb({"persistent": True, "db-uri": db_uri, "rule_id": "rid"})
     yield db
 
 
