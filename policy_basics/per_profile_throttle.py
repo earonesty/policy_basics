@@ -11,7 +11,7 @@ from typing import Union
 
 from atakama import RulePlugin, ApprovalRequest, ProfileInfo
 
-from policy_basics.simple_db import AbstractDb, UriDb, MemoryDb
+from policy_basics.simple_db import UriDb, MemoryDb
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
