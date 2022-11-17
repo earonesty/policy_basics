@@ -68,8 +68,11 @@ class UriDb(AbstractDb):
                 self.db.execute("PRAGMA journal_mode=WAL;")
                 self.db.execute("PRAGMA synchronous=NORMAL;")
 
+            if self.db.uri_name == "mysql":
+                self.db.execute("SET sql_mode='strict_trans_tables';")
+
             self.db.execute_ddl(
-                "create table %s (key varchar(64) primary key, val text, ival integer)"
+                "create table %s (key varchar(128) primary key, val text, ival integer)"
                 % self.table,
                 "mysql",
             )
