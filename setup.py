@@ -15,7 +15,7 @@ def long_description():
 
 setup(
     name="atakama_policy_basics",
-    version="1.3.1",
+    version="1.3.2",
     python_requires=">=3.7",
     description="Convert python docstring documentation to github markdown files",
     packages=["policy_basics"],
