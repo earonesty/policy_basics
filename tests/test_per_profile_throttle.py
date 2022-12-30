@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: © Atakama, Inc <support@atakama.com>
 # SPDX-License-Identifier: LGPL-3.0-or-later
 import os
+import time
 import unittest.mock
 from contextlib import contextmanager
 from typing import Iterator
@@ -176,7 +177,7 @@ def test_throttle_db_corruption(tmp_path):
     with path.open("w") as db_fh:
         db_fh.write("junk")
     db = ProfileThrottleDb({"persistent": True, "db-file": path, "rule_id": "rid"})
-    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+    assert db.increment("rid", b"pid", db.get("rid", b"pid", lock=False)).day_cnt == 1
 
 
 def test_throttle_db_schema_bad(tmp_path):
@@ -185,7 +186,7 @@ def test_throttle_db_schema_bad(tmp_path):
     with notanorm.SqliteDb(str(path)) as db:
         db.query("create table %s (ajunk, bjunk)" % UriDb.TABLE_NAME)
     db = ProfileThrottleDb({"persistent": True, "db-file": path, "rule_id": "rid"})
-    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+    assert db.increment("rid", b"pid", db.get("rid", b"pid", lock=False)).day_cnt == 1
 
 
 def test_throttle_db_uri_broken(db_uri):
@@ -202,15 +203,15 @@ def test_throttle_db_uri_broken(db_uri):
 def test_throttle_db_mem_not_persist(db_uri):
     # if persistence is off, it's not persistent
     db = ProfileThrottleDb({"persistent": False, "db-uri": db_uri})
-    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+    assert db.increment("rid", b"pid", db.get("rid", b"pid", lock=False)).day_cnt == 1
     db = ProfileThrottleDb({"persistent": False, "db-uri": db_uri})
-    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+    assert db.increment("rid", b"pid", db.get("rid", b"pid", lock=False)).day_cnt == 1
 
 
 def test_throttle_custom_table(db_uri):
     # if persistence is off, it's not persistent
     db = ProfileThrottleDb({"persistent": True, "db-uri": db_uri, "db-table": "custom"})
-    assert db.increment("rid", b"pid", db.get("rid", b"pid")).day_cnt == 1
+    assert db.increment("rid", b"pid", db.get("rid", b"pid", lock=False)).day_cnt == 1
     assert db.db.table == "custom"
 
 
@@ -220,22 +221,54 @@ def throt_db(db_uri):
     yield db
 
 
-def test_throttle_db_weird_data(throt_db):
+def test_throttle_db_weird_data(throt_db, db_uri):
     bad_dct = {"tm": None, "hr": "wot", "dy": 3}
-    assert throt_db.increment("rid", b"pid", throt_db.get("rid", b"pid")).day_cnt == 1
+    assert (
+        throt_db.increment(
+            "rid", b"pid", throt_db.get("rid", b"pid", lock=False)
+        ).day_cnt
+        == 1
+    )
     throt_db.db.set(
         ProfileThrottleDb._get_db_key("rid", b"pid"), ProfileCount._dict_to_str(bad_dct)
     )
-    assert throt_db.increment("rid", b"pid", throt_db.get("rid", b"pid")).day_cnt == 1
+    assert (
+        throt_db.increment(
+            "rid", b"pid", throt_db.get("rid", b"pid", lock=False)
+        ).day_cnt
+        == 1
+    )
+
+    db2 = ProfileThrottleDb({"persistent": True, "db-uri": db_uri, "rule_id": "rid"})
+    throt_db.db.set(
+        ProfileThrottleDb._get_db_key("rid", b"pid"), ProfileCount._dict_to_str(bad_dct)
+    )
+    prof_cnt = throt_db.get("rid", b"pid", lock=True)
+    prof_cnt2 = db2.get("rid", b"pid", lock=False)
+    assert db2.is_locked(prof_cnt2)
+    prof_cnt = throt_db.increment("rid", b"pid", prof_cnt)
+    assert prof_cnt.day_cnt == 1
+    prof_cnt2 = db2.get("rid", b"pid", lock=False)
+    assert not db2.is_locked(prof_cnt2)
 
 
 def test_throttle_db_schema_change(throt_db):
     bad_dct = {"tim": 1, "hr": 1, "dy": 3}
-    assert throt_db.increment("rid", b"pid", throt_db.get("rid", b"pid")).day_cnt == 1
+    assert (
+        throt_db.increment(
+            "rid", b"pid", throt_db.get("rid", b"pid", lock=False)
+        ).day_cnt
+        == 1
+    )
     throt_db.db.set(
         ProfileThrottleDb._get_db_key("rid", b"pid"), ProfileCount._dict_to_str(bad_dct)
     )
-    assert throt_db.increment("rid", b"pid", throt_db.get("rid", b"pid")).day_cnt == 1
+    assert (
+        throt_db.increment(
+            "rid", b"pid", throt_db.get("rid", b"pid", lock=False)
+        ).day_cnt
+        == 1
+    )
 
 
 def test_end_to_end():
@@ -250,3 +283,65 @@ def test_end_to_end():
             cryptographic_id=None,
         )
     )
+
+
+def test_locking():
+    pr1 = ProfileThrottleRule({"per_day": 10, "persistent": True, "rule_id": "rid"})
+    pr2 = ProfileThrottleRule({"per_day": 10, "persistent": True, "rule_id": "rid"})
+    assert pr1.db.lock_value != pr2.db.lock_value  # Sanity check
+
+    assert pr1._approve_profile_request(b"pid")
+    assert not pr2._approve_profile_request(b"pid"), "Expected DB to be locked"
+    with pytest.raises(RuntimeError):
+        pr2._use_quota(b"pid")
+    pr1._use_quota(b"pid")  # Clears lock
+    assert pr2._approve_profile_request(b"pid")
+    pr2._use_quota(b"pid")  # Clears lock to stop interference with other tests
+
+
+def test_explicit_locking(db_uri):
+    db1 = ProfileThrottleDb({"persistent": True, "db-uri": db_uri, "rule_id": "rid"})
+    db2 = ProfileThrottleDb({"persistent": True, "db-uri": db_uri, "rule_id": "rid"})
+    prof_cnt1 = db1.get("rid", b"pid", lock=False)
+    prof_cnt2 = db2.get("rid", b"pid", lock=False)
+    assert not db1.is_locked(prof_cnt1)
+    assert not db2.is_locked(prof_cnt2)
+    db1.lock("rid", b"pid", prof_cnt1)
+    prof_cnt1 = db1.get("rid", b"pid", lock=False)
+    prof_cnt2 = db2.get("rid", b"pid", lock=False)
+    assert not db1.is_locked(prof_cnt1)
+    assert db2.is_locked(prof_cnt2)
+    db1.unlock("rid", b"pid", prof_cnt1)
+    prof_cnt1 = db1.get("rid", b"pid", lock=False)
+    prof_cnt2 = db2.get("rid", b"pid", lock=False)
+    assert not db1.is_locked(prof_cnt1)
+    assert not db2.is_locked(prof_cnt2)
+
+
+def test_locking_timeout():
+    expiry_secs = 3
+
+    pr1 = ProfileThrottleRule(
+        {
+            "per_day": 10,
+            "persistent": True,
+            "rule_id": "rid",
+            "expiry_secs": expiry_secs,
+        }
+    )
+    pr2 = ProfileThrottleRule(
+        {
+            "per_day": 10,
+            "persistent": True,
+            "rule_id": "rid",
+            "expiry_secs": expiry_secs,
+        }
+    )
+    assert pr1.db.lock_value != pr2.db.lock_value  # Sanity check
+
+    assert pr1._approve_profile_request(b"pid")
+    assert not pr2._approve_profile_request(b"pid"), "Expected DB to be locked"
+
+    time.sleep(expiry_secs)
+    assert pr2._approve_profile_request(b"pid"), "Expected lock to have expired"
+    pr2._use_quota(b"pid")  # Clears lock to stop interference with other tests

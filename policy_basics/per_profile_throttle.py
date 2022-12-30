@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 
 import logging
-from typing import Union
+from typing import Optional, Union
 
 from atakama import RulePlugin, ApprovalRequest, ProfileInfo
 
@@ -19,6 +19,8 @@ log.setLevel(logging.INFO)
 LOCAL_TIMEZONE = datetime.now().astimezone().tzinfo
 
 INFINITE = -1
+# A mofnop times out in 60 seconds. Allow 30 seconds of clock skew. => 90 second default
+DEFAULT_EXPIRY_TIME = 90
 
 
 class Timer:
@@ -35,7 +37,15 @@ class ProfileCount:
     hour_cnt: int = 0
     day_cnt: int = 0
 
-    def __init__(self, timestamp=None, hour_cnt=0, day_cnt=0):
+    def __init__(
+        self,
+        timestamp=None,
+        hour_cnt=0,
+        day_cnt=0,
+        lock_value: Optional[str] = None,
+        expiry_secs: float = DEFAULT_EXPIRY_TIME,
+    ):
+        # pylint: disable=too-many-arguments
         if timestamp and (hour_cnt or day_cnt):
             now = Timer.now()
             reqtime = datetime.fromtimestamp(timestamp, LOCAL_TIMEZONE)
@@ -54,20 +64,33 @@ class ProfileCount:
         self._ts = Timer.time()
         self.hour_cnt = int(hour_cnt)
         self.day_cnt = int(day_cnt)
+        if timestamp and timestamp + expiry_secs < self._ts:
+            self.lock_value = None
+        else:
+            self.lock_value = lock_value
 
     @staticmethod
-    def from_dict(dat):
-        return ProfileCount(dat["tm"], dat["hr"], dat["dy"])
+    def from_dict(dat, expiry_secs=DEFAULT_EXPIRY_TIME):
+        return ProfileCount(
+            dat["tm"],
+            dat["hr"],
+            dat["dy"],
+            dat.get("lk", None),
+            expiry_secs=expiry_secs,
+        )
 
     @staticmethod
-    def from_str(dat: str):
-        return ProfileCount.from_dict(json.loads(dat))
+    def from_str(dat: str, expiry_secs=DEFAULT_EXPIRY_TIME):
+        return ProfileCount.from_dict(json.loads(dat), expiry_secs=expiry_secs)
 
-    def to_dict(self):
-        return {"tm": self._ts, "hr": self.hour_cnt, "dy": self.day_cnt}
+    def to_dict(self, lock_value: str = None):
+        ret = {"tm": self._ts, "hr": self.hour_cnt, "dy": self.day_cnt}
+        if lock_value is not None:
+            ret["lk"] = lock_value
+        return ret
 
-    def to_str(self) -> str:
-        return self._dict_to_str(self.to_dict())
+    def to_str(self, lock_value: str = None) -> str:
+        return self._dict_to_str(self.to_dict(lock_value))
 
     @staticmethod
     def _dict_to_str(dct) -> str:
@@ -82,6 +105,8 @@ class ProfileThrottleDb:
     db: Union[MemoryDb, UriDb]
 
     def __init__(self, args):
+        self.lock_value = os.urandom(8).hex()
+        self.expiry_secs = args.get("expiry_secs", DEFAULT_EXPIRY_TIME)
         if not args.get("persistent", False):
             self.db = MemoryDb()
         else:
@@ -110,20 +135,55 @@ class ProfileThrottleDb:
     def _get_db_key(rule_id: str, profile_id: bytes):
         return profile_id.hex() + ":" + rule_id
 
-    def get(self, rule_id: str, profile_id: bytes) -> ProfileCount:
-        data = self.db.get(self._get_db_key(rule_id, profile_id))
+    def get(
+        self, rule_id: str, profile_id: bytes, lock: bool
+    ) -> Optional[ProfileCount]:
+        """Gets the row in the db.
+
+        Args:
+            lock - Whether or not to try to lock the row
+
+        Returns None if the row is already locked by someone else, otherwise a ProfileCount object.
+        """
+        key = self._get_db_key(rule_id, profile_id)
+        data = self.db.get(key)
+        pc = None
         if not data:
-            return ProfileCount()
+            pc = ProfileCount()
+            if lock:
+                self.db.set(key, pc.to_str(self.lock_value))
+            return pc
         try:
-            return ProfileCount.from_str(data)
+            pc = ProfileCount.from_str(data, expiry_secs=self.expiry_secs)
         except (ValueError, TypeError, AssertionError, KeyError):
             log.warning("invalid value in db, resetting: (%s)", data)
-            return ProfileCount()
+            pc = ProfileCount()
+            if lock:
+                self.db.set(key, pc.to_str(self.lock_value))
+            return pc
+        if lock:
+            if self.is_locked(pc):
+                return None
+            self.db.set(key, pc.to_str(self.lock_value))
+            return pc
+        return pc
 
     def increment(self, rule_id: str, profile_id: bytes, pc: ProfileCount):
         pc.increment()
-        self.db.set(self._get_db_key(rule_id, profile_id), pc.to_str())
+        self.db.set(self._get_db_key(rule_id, profile_id), pc.to_str(lock_value=None))
         return pc
+
+    def lock(self, rule_id, profile_id, pc: ProfileCount):
+        self.db.set(
+            self._get_db_key(rule_id, profile_id), pc.to_str(lock_value=self.lock_value)
+        )
+
+    def unlock(self, rule_id, profile_id, pc: ProfileCount):
+        self.db.set(self._get_db_key(rule_id, profile_id), pc.to_str(lock_value=None))
+
+    def is_locked(self, pc):
+        """Returns whether or not the row is locked by someone else."""
+        return not ((pc.lock_value is None) or (pc.lock_value == self.lock_value))
 
     def clear(self, rule_id: str, profile_id: bytes):
         self.db.remove(self._get_db_key(rule_id, profile_id))
@@ -164,8 +224,16 @@ class ProfileThrottleRule(RulePlugin):
         return self._approve_profile_request(request.profile.profile_id)
 
     def _approve_profile_request(self, profile_id):
-        pc = self.db.get(self.rule_id, profile_id)
+        pc = self.db.get(self.rule_id, profile_id, lock=True)
+        if pc is None:
+            log.warning(
+                "ProfileThrottleRule._approve_profile_request rule_id=%s is_locked=True",
+                self.rule_id,
+            )
+            return False
         within = self._within_quota(pc)
+        if not within:
+            self.db.unlock(self.rule_id, profile_id, pc)
         log.debug(
             "ProfileThrottleRule._approve_profile_request rule_id=%s within=%s "
             "day_cnt=%i hour_cnt=%i",
@@ -180,7 +248,14 @@ class ProfileThrottleRule(RulePlugin):
         return self._use_quota(request.profile.profile_id)
 
     def _use_quota(self, profile_id):
-        pc = self.db.get(self.rule_id, profile_id)
+        pc = self.db.get(self.rule_id, profile_id, lock=True)
+        if pc is None:
+            log.warning(
+                "ProfileThrottleRule._approve_profile_request rule_id=%s is_locked=True",
+                self.rule_id,
+            )
+            # There should be a more descriptive error in atakama_sdk that we can use here.
+            raise RuntimeError("Profile Row is being handled by another process")
         pc = self.db.increment(self.rule_id, profile_id, pc)
         log.debug(
             "ProfileThrottleRule._use_quota rule_id=%s now day_cnt=%i hour_cnt=%i",
@@ -205,5 +280,5 @@ class ProfileThrottleRule(RulePlugin):
         self.db.clear(self.rule_id, profile.profile_id)
 
     def at_quota(self, profile: ProfileInfo) -> bool:
-        pc = self.db.get(self.rule_id, profile.profile_id)
+        pc = self.db.get(self.rule_id, profile.profile_id, lock=False)
         return not self._within_quota(pc)
