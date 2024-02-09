@@ -97,8 +97,7 @@ class UriDb(AbstractDb):
             self.db.upsert(self.table, key=key, ival=value, val=None)
 
     def get(self, key) -> DbVal:
-        ret = self.db.select_one(self.table, key=key)
-        if ret is None:
+        if (ret := self.db.select_one(self.table, key=key)) is None:
             return None
         return ret.ival if ret.val is None else ret.val
 
