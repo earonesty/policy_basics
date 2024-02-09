@@ -224,8 +224,7 @@ class ProfileThrottleRule(RulePlugin):
         return self._approve_profile_request(request.profile.profile_id)
 
     def _approve_profile_request(self, profile_id):
-        pc = self.db.get(self.rule_id, profile_id, lock=True)
-        if pc is None:
+        if (pc := self.db.get(self.rule_id, profile_id, lock=True)) is None:
             log.warning(
                 "ProfileThrottleRule._approve_profile_request rule_id=%s is_locked=True",
                 self.rule_id,
@@ -248,8 +247,7 @@ class ProfileThrottleRule(RulePlugin):
         return self._use_quota(request.profile.profile_id)
 
     def _use_quota(self, profile_id):
-        pc = self.db.get(self.rule_id, profile_id, lock=True)
-        if pc is None:
+        if (pc := self.db.get(self.rule_id, profile_id, lock=True)) is None:
             log.warning(
                 "ProfileThrottleRule._approve_profile_request rule_id=%s is_locked=True",
                 self.rule_id,
